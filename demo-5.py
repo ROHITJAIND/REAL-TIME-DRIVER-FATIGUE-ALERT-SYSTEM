@@ -6,7 +6,6 @@ import dlib
 import cv2
 import simpleaudio as sa
 import threading
-import base64
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
 
 # Load the facial landmark predictor
@@ -16,16 +15,11 @@ EYE_AR_CONSEC_FRAMES = 10
 MOU_AR_THRESH = 1.10   
 
 # Alarm function
-def play_alarm(file_path):
-    with open(file_path, "rb") as f:
-            audio_data = f.read()
-    b64_audio = base64.b64encode(audio_data).decode()
-    return f"""
-    <audio autoplay>
-        <source src="data:audio/wav;base64,{b64_audio}" type="audio/wav">
-        Your browser does not support the audio element.
-    </audio>
-    """
+def play_alarm():
+    wave_obj = sa.WaveObject.from_wave_file("alarm.wav")
+    play_obj = wave_obj.play()
+    play_obj.wait_done()
+
 # EAR and MOR calculation functions
 def EAR(eye):
     A = dist.euclidean(eye[1], eye[5])
@@ -85,7 +79,7 @@ class VideoTransformer(VideoTransformerBase):
                 if self.COUNTER >= EYE_AR_CONSEC_FRAMES and not self.alarm_on:
                     cv2.putText(frame, "DROWSINESS ALERT!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     self.alarm_on = True
-                    st.markdown(play_alarm("alarm.wav"), unsafe_allow_html=True)
+                    threading.Thread(target=play_alarm).start()
                     self.alarm_on = False
             else:
                 self.COUNTER = 0
@@ -101,7 +95,7 @@ class VideoTransformer(VideoTransformerBase):
                 cv2.putText(frame, output_text, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
                 if not self.alarm_on:
                     self.alarm_on = True
-                    st.markdown(play_alarm("alarm.wav"), unsafe_allow_html=True)
+                    threading.Thread(target=play_alarm).start()
                     self.alarm_on = False
             else:
                 self.yawn_status = False
