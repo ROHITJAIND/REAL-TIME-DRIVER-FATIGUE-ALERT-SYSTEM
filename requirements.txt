@@ -1,9 +1,9 @@
+dlib==19.24.6
 imutils==0.5.4
 numpy==2.1.2
+opencv_contrib_python==4.10.0.84
+opencv_python==4.10.0.84
+opencv_python_headless==4.10.0.84
+pygame==2.6.1
 scipy==1.14.1
 streamlit==1.39.0
-opencv-contrib-python==4.10.0.84
-opencv-python==4.10.0.84
-opencv-python-headless==4.10.0.84
-dlib-bin==19.24.6
-pygame==2.6.1
