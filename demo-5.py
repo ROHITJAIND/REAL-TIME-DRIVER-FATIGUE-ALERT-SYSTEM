@@ -44,8 +44,17 @@ svm_predictor = dlib.shape_predictor(svm_predictor_path)
 st.title("Driver Drowsiness Monitoring System")
 st.write("Real-time monitoring using Visual Behaviour and Machine Learning")
 
-# Webcam Start Button
+# Variables to control monitoring
+monitoring = st.session_state.get("monitoring", False)
+
+# Webcam Start and Stop Button
 if st.button("Start Monitoring"):
+    st.session_state.monitoring = True
+if st.button("Stop Monitoring"):
+    st.session_state.monitoring = False
+
+# Monitoring loop
+if st.session_state.monitoring:
     webcamera = cv2.VideoCapture(0)
     COUNTER = 0
     yawnStatus = False
@@ -55,7 +64,7 @@ if st.button("Start Monitoring"):
     # Create a place in Streamlit to display video frames
     frame_display = st.image([])
 
-    while webcamera.isOpened():
+    while webcamera.isOpened() and st.session_state.monitoring:
         ret, frame = webcamera.read()
         if not ret:
             break
@@ -91,7 +100,6 @@ if st.button("Start Monitoring"):
                     cv2.putText(frame, "DROWSINESS ALERT!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     alarm_on = True
                     threading.Thread(target=play_alarm).start()
-                    alarm_on = False
             else:
                 COUNTER = 0
                 alarm_on = False
@@ -107,7 +115,6 @@ if st.button("Start Monitoring"):
                 if not alarm_on:
                     alarm_on = True
                     threading.Thread(target=play_alarm).start()
-                    alarm_on = False
             else:
                 yawnStatus = False
 
@@ -118,10 +125,10 @@ if st.button("Start Monitoring"):
 
         frame_display.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if cv2.waitKey(1) & 0xFF == ord("q") or not st.session_state.monitoring:
             break
 
     webcamera.release()
     cv2.destroyAllWindows()
 else:
-    st.write("Click the 'Start Monitoring' button to initiate drowsiness monitoring.")
+    st.write("Click 'Start Monitoring' to initiate drowsiness monitoring.")
