@@ -46,7 +46,7 @@ st.write("Real-time monitoring using Visual Behaviour and Machine Learning")
 
 # Variables to control monitoring
 monitoring = st.session_state.get("monitoring", False)
-
+st.session_state.monitoring = False
 # Webcam Start and Stop Button
 if st.button("Start Monitoring"):
     st.session_state.monitoring = True
