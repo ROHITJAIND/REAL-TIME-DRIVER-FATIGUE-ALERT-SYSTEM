@@ -16,5 +16,5 @@ dlib-bin==19.24.6
 #dlib-binary==19.24.1
 dlib-compiled==19.16.99
 #friday-dlib==19.7.0
-hmcsdlib==19.22.99
-hmcsdlib-gpu==19.22.99
+#hmcsdlib==19.22.99
+#hmcsdlib-gpu==19.22.99
