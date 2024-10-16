@@ -126,9 +126,10 @@ if st.session_state.monitoring:
         frame_display.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         if cv2.waitKey(1) & 0xFF == ord("q") or not st.session_state.monitoring:
+            webcamera.release()
+            cv2.destroyAllWindows()
             break
 
-    webcamera.release()
-    cv2.destroyAllWindows()
+
 else:
     st.write("Click 'Start Monitoring' to initiate drowsiness monitoring.")
