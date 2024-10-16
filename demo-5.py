@@ -2,17 +2,17 @@ import streamlit as st
 from scipy.spatial import distance as dist
 from imutils import face_utils
 import numpy as np
+import imutils
 import dlib
 import cv2
 import simpleaudio as sa
 import threading
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
 
-# Load the facial landmark predictor
+# Initialize Dlib’s face detector
 svm_predictor_path = 'SVMclassifier.dat'
 EYE_AR_THRESH = 0.20
 EYE_AR_CONSEC_FRAMES = 10
-MOU_AR_THRESH = 1.10   
+MOU_AR_THRESH = 1.1
 
 # Alarm function
 def play_alarm():
@@ -20,37 +20,48 @@ def play_alarm():
     play_obj = wave_obj.play()
     play_obj.wait_done()
 
-# EAR and MOR calculation functions
-def EAR(eye):
-    A = dist.euclidean(eye[1], eye[5])
-    B = dist.euclidean(eye[2], eye[4])
-    C = dist.euclidean(eye[0], eye[3])
-    return (A + B) / (2.0 * C)
+# Functions for EAR and MAR
+def EAR(drivereye):
+    point1 = dist.euclidean(drivereye[1], drivereye[5])
+    point2 = dist.euclidean(drivereye[2], drivereye[4])
+    distance = dist.euclidean(drivereye[0], drivereye[3])
+    return (point1 + point2) / (2.0 * distance)
 
-def MAR(mouth):
-    A = dist.euclidean(mouth[0], mouth[6])
-    B = dist.euclidean(mouth[2], mouth[10])
-    C = dist.euclidean(mouth[4], mouth[8])
-    return (B + C) / A
+def MOR(drivermouth):
+    point = dist.euclidean(drivermouth[0], drivermouth[6])
+    point1 = dist.euclidean(drivermouth[2], drivermouth[10])
+    point2 = dist.euclidean(drivermouth[4], drivermouth[8])
+    return (point1 + point2) / point
 
-# Initialize Dlib’s face detector and facial landmark predictor
+# Load SVM classifier and facial landmark predictor
 svm_detector = dlib.get_frontal_face_detector()
 svm_predictor = dlib.shape_predictor(svm_predictor_path)
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 (mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
 
-class VideoTransformer(VideoTransformerBase):
-    def __init__(self):
-        self.COUNTER = 0
-        self.alarm_on = False
-        self.yawn_status = False
-        self.yawns = 0
+# Streamlit Interface
+st.title("Driver Drowsiness Monitoring System")
+st.write("Real-time monitoring using Visual Behaviour and Machine Learning")
 
-    def transform(self, frame):
-        frame = frame.to_ndarray(format="bgr24")
-        
+# Webcam Start Button
+if st.button("Start Monitoring"):
+    webcamera = cv2.VideoCapture(0)
+    COUNTER = 0
+    yawnStatus = False
+    yawns = 0
+    alarm_on = False
+
+    # Create a place in Streamlit to display video frames
+    frame_display = st.image([])
+
+    while webcamera.isOpened():
+        ret, frame = webcamera.read()
+        if not ret:
+            break
+        frame = imutils.resize(frame, width=640)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        prev_yawn_status = yawnStatus
         rects = svm_detector(gray, 0)
 
         for rect in rects:
@@ -62,8 +73,8 @@ class VideoTransformer(VideoTransformerBase):
 
             leftEAR = EAR(leftEye)
             rightEAR = EAR(rightEye)
+            mouEAR = MOR(mouth)
             ear = (leftEAR + rightEAR) / 2.0
-            mar = MAR(mouth)
 
             leftEyeHull = cv2.convexHull(leftEye)
             rightEyeHull = cv2.convexHull(rightEye)
@@ -74,44 +85,43 @@ class VideoTransformer(VideoTransformerBase):
             cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
 
             if ear < EYE_AR_THRESH:
-                self.COUNTER += 1
+                COUNTER += 1
                 cv2.putText(frame, "Eyes Closed", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                if self.COUNTER >= EYE_AR_CONSEC_FRAMES and not self.alarm_on:
+                if COUNTER >= EYE_AR_CONSEC_FRAMES and not alarm_on:
                     cv2.putText(frame, "DROWSINESS ALERT!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    self.alarm_on = True
+                    alarm_on = True
                     threading.Thread(target=play_alarm).start()
-                    self.alarm_on = False
+                    alarm_on = False
             else:
-                self.COUNTER = 0
-                self.alarm_on = False
+                COUNTER = 0
+                alarm_on = False
                 cv2.putText(frame, "Eyes Open", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                
+
             cv2.putText(frame, "EAR: {:.2f}".format(ear), (480, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-            
-            if mar > MOU_AR_THRESH:
+
+            if mouEAR > MOU_AR_THRESH:
                 cv2.putText(frame, "Yawning, DROWSINESS ALERT!", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                self.yawn_status = True
-                output_text = "Yawn Count: " + str(self.yawns + 1)
+                yawnStatus = True
+                output_text = "Yawn Count: " + str(yawns + 1)
                 cv2.putText(frame, output_text, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-                if not self.alarm_on:
-                    self.alarm_on = True
+                if not alarm_on:
+                    alarm_on = True
                     threading.Thread(target=play_alarm).start()
-                    self.alarm_on = False
+                    alarm_on = False
             else:
-                self.yawn_status = False
+                yawnStatus = False
 
-            if self.yawn_status and not self.yawn_status:
-                self.yawns += 1
-                
-            cv2.putText(frame, "MAR: {:.2f}".format(mar), (480, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        
-        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            if prev_yawn_status and not yawnStatus:
+                yawns += 1
 
-st.title("Driver Drowsiness Monitoring System")
-st.write("Real-time monitoring using Visual Behaviour and Machine Learning")
-webrtc_streamer(
-    key="drowsiness_detection",
-    mode=WebRtcMode.SENDRECV,
-    video_transformer_factory=VideoTransformer,
-    rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
-)
+            cv2.putText(frame, "MAR: {:.2f}".format(mouEAR), (480, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+        frame_display.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    webcamera.release()
+    cv2.destroyAllWindows()
+else:
+    st.write("Click the 'Start Monitoring' button to initiate drowsiness monitoring.")
