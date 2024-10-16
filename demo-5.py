@@ -5,8 +5,7 @@ import numpy as np
 import imutils
 import dlib
 import cv2
-# import pygame
-from playsound import playsound
+import pygame
 import threading
 
 # Initialize Dlib’s face detector
@@ -16,11 +15,10 @@ EYE_AR_CONSEC_FRAMES = 10
 MOU_AR_THRESH = 1.2
 
 # Alarm function
-# pygame.mixer.init()
+pygame.mixer.init()
 def play_alarm():
-    playsound("alarm.wav")
-    # pygame.mixer.music.load("alarm.wav")
-    # pygame.mixer.music.play()
+    pygame.mixer.music.load("alarm.wav")
+    pygame.mixer.music.play()
 
 # Functions for EAR and MAR
 def EAR(drivereye):
@@ -49,6 +47,9 @@ st.write("Real-time monitoring using Visual Behaviour and Machine Learning")
 # Variables to control monitoring
 monitoring = st.session_state.get("monitoring", False)
 st.session_state.monitoring = False
+
+if 'alarm_playing' not in st.session_state:
+    st.session_state['alarm_playing'] = False
 # Webcam Start and Stop Button
 if st.button("Start Monitoring"):
     st.session_state.monitoring = True
@@ -101,6 +102,7 @@ if st.session_state.monitoring:
                 if COUNTER >= EYE_AR_CONSEC_FRAMES and not alarm_on:
                     cv2.putText(frame, "DROWSINESS ALERT!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     alarm_on = True
+                    # a=st.audio('alarm.wav',autoplay=True)
                     threading.Thread(target=play_alarm).start()
             else:
                 COUNTER = 0
