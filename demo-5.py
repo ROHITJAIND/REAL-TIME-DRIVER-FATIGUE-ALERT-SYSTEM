@@ -117,6 +117,7 @@ if st.session_state.monitoring:
                     threading.Thread(target=play_alarm).start()
             else:
                 yawnStatus = False
+                alarm_on = False
 
             if prev_yawn_status and not yawnStatus:
                 yawns += 1
