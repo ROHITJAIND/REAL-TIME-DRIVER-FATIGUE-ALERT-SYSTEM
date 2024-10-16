@@ -5,7 +5,7 @@ import numpy as np
 import imutils
 import dlib
 import cv2
-import simpleaudio as sa
+import pygame
 import threading
 
 # Initialize Dlib’s face detector
@@ -15,10 +15,10 @@ EYE_AR_CONSEC_FRAMES = 10
 MOU_AR_THRESH = 1.1
 
 # Alarm function
+pygame.mixer.init()
 def play_alarm():
-    wave_obj = sa.WaveObject.from_wave_file("alarm.wav")
-    play_obj = wave_obj.play()
-    play_obj.wait_done()
+    pygame.mixer.music.load("alarm.wav")
+    pygame.mixer.music.play()
 
 # Functions for EAR and MAR
 def EAR(drivereye):
