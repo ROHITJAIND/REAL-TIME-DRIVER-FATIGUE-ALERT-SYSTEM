@@ -12,12 +12,12 @@ import threading
 svm_predictor_path = 'SVMclassifier.dat'
 EYE_AR_THRESH = 0.20
 EYE_AR_CONSEC_FRAMES = 10
-MOU_AR_THRESH = 1.2
+MOU_AR_THRESH = 1.4
 
 # Alarm function
 pygame.mixer.init()
 def play_alarm():
-    pygame.mixer.music.load("alarm.wav")
+    pygame.mixer.music.load("alarm.wav")    
     pygame.mixer.music.play()
 
 # Functions for EAR and MAR
@@ -41,7 +41,7 @@ svm_predictor = dlib.shape_predictor(svm_predictor_path)
 (mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
 
 # Streamlit Interface
-st.title("Driver ROHIT Drowsiness Monitoring System")
+st.title("Driver Drowsiness Monitoring System")
 st.write("Real-time monitoring using Visual Behaviour and Machine Learning")
 
 # Variables to control monitoring
